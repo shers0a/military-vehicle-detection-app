@@ -1,0 +1,11 @@
+path:
+train: train/images
+val: val/images
+
+nc: 5
+names:
+  0: Small_Military_Vehicle
+  1: Large_Military_Vehicle
+  2: Armored_Fighting_Vehicle
+  3: Civilian_Vehicle
+  4: Military_Construction_Vehicle
