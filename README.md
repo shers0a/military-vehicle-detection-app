@@ -21,4 +21,12 @@ The app works through streamlit and it oppens through the command: "streamlit ru
 Works only on python 3.11, for which i created the environment. all the libraries needed to run the program are:
 ultralytics, pytorch( torch visual, torch audio ), sahi, matplotlib, PIL, seaborn, numpy.
 
+app.py = the app code (front end)
+antrenare.py = the settings used for training the yolo model. use the file to train your own with the command "python antrenare.py" in the terminal
+config.yaml = the configuration file used for the paths and classes
+hmp.py = the code for the heatmap, apart from the one from app.py
+
+This is the structure you should use for the project or create your own folder:                        
+main folder(name)---> dataset---> train and val--> images file and labels file for each                
+
 ENJOY!
