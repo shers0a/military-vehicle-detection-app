@@ -1,5 +1,5 @@
 # military-vehicle-detection-app
-This is the code i used for ROSPIN SATELLITE DATA PROCESSING MASTERCLASS 2025
+This is the app i used for ROSPIN SATELLITE DATA PROCESSING MASTERCLASS 2025    
 It works on RGB satellite imagery, using YOLOv8, and it has 2 purposes, 2 options in which it can be used:
 1. Static detection, which consists in uploading a file with the maximum capacity 2000 MB and it detects the vehicles
   in it, through a slicing procedure with the SAHI library. It also counts the vehicles and sorts them in different classes:
