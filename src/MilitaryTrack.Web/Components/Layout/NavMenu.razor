@@ -1,0 +1,41 @@
+<div class="nav-menu">
+    <NavLink href="detect" Match="NavLinkMatch.All" class="nav-link">
+        Object Detection <span class="nav-sub">(Single Image)</span>
+    </NavLink>
+    <NavLink href="tactical-map" class="nav-link">
+        Tactical Map <span class="nav-sub">(T0 vs T1)</span>
+    </NavLink>
+</div>
+
+<style>
+    .nav-menu {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .nav-link {
+        display: block;
+        padding: 0.6rem 0.75rem;
+        border-radius: 6px;
+        color: #c7ccd6;
+        text-decoration: none;
+    }
+
+    .nav-link:hover {
+        background: #29344326;
+        background: #2a3547;
+        color: #fff;
+    }
+
+    .nav-link.active {
+        background: #3a5a8c;
+        color: #fff;
+    }
+
+    .nav-sub {
+        display: block;
+        font-size: 0.75rem;
+        opacity: 0.7;
+    }
+</style>

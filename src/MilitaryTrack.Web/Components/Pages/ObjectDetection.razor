@@ -1,0 +1,126 @@
+@page "/detect"
+@inject InferenceClient InferenceClient
+@rendermode InteractiveServer
+
+<PageTitle>Object Detection</PageTitle>
+
+<h1>Military Object Detection</h1>
+
+@if (ServiceUnavailable is not null)
+{
+    <p class="banner banner-error">Inference service unavailable: @ServiceUnavailable</p>
+}
+
+<UploadPanel Label="Upload an image (.jpg, .png):" ImageChanged="OnImageChanged" />
+
+<div class="controls">
+    <label>
+        Confidence threshold
+        <input type="number" step="0.05" min="0" max="1" @bind="ConfidenceThreshold" style="width: 5rem" />
+    </label>
+    <button class="btn-primary" disabled="@(_image is null || _busy)" @onclick="DetectAsync">
+        @(_busy ? "Analyzing…" : "Detect Objects")
+    </button>
+</div>
+
+@if (_error is not null)
+{
+    <p class="banner banner-error">@_error</p>
+}
+
+@if (_result is not null && _image is not null)
+{
+    <hr />
+    <DetectionOverlay ImageDataUrl="@_image.DataUrl" ImageWidth="_result.ImageWidth" ImageHeight="_result.ImageHeight" Detections="_result.Detections" />
+
+    @if (_result.TotalObjects > 0)
+    {
+        <p class="banner banner-success">Detection complete! Total objects: @_result.TotalObjects</p>
+        <table class="counts-table">
+            <thead><tr><th>Class</th><th>Count</th></tr></thead>
+            <tbody>
+                @foreach (var (className, count) in _result.Counts)
+                {
+                    <tr><td>@className</td><td>@count</td></tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p class="banner banner-warning">No objects detected.</p>
+    }
+}
+
+<style>
+    .controls { display: flex; align-items: center; gap: 1rem; margin: 1rem 0; }
+    .btn-primary { padding: 0.5rem 1rem; cursor: pointer; }
+    .banner { padding: 0.6rem 1rem; border-radius: 6px; margin: 0.75rem 0; }
+    .banner-error { background: #fdecea; color: #b32121; }
+    .banner-success { background: #e8f6ec; color: #1e7e34; }
+    .banner-warning { background: #fff8e1; color: #8a6d00; }
+    .counts-table { border-collapse: collapse; margin-top: 0.5rem; }
+    .counts-table th, .counts-table td { border: 1px solid #d7dbe2; padding: 0.4rem 0.8rem; text-align: left; }
+</style>
+
+@code {
+    private UploadedImage? _image;
+    private DetectionResult? _result;
+    private bool _busy;
+    private string? _error;
+    private double ConfidenceThreshold { get; set; } = 0.35;
+    private string? ServiceUnavailable { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var config = await InferenceClient.GetConfigAsync();
+            ConfidenceThreshold = config.DefaultConfidenceThreshold;
+        }
+        catch (Exception ex)
+        {
+            ServiceUnavailable = ex.Message;
+        }
+    }
+
+    private void OnImageChanged(UploadedImage? image)
+    {
+        _image = image;
+        _result = null;
+        _error = null;
+    }
+
+    private async Task DetectAsync()
+    {
+        if (_image is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        _result = null;
+
+        try
+        {
+            using var stream = _image.OpenStream();
+            _result = await InferenceClient.DetectAsync(stream, _image.FileName, new DetectionOptions
+            {
+                ConfidenceThreshold = ConfidenceThreshold,
+            });
+        }
+        catch (InferenceServiceException ex)
+        {
+            _error = $"Detection failed: {ex.Message}";
+        }
+        catch (Exception ex)
+        {
+            _error = $"Could not reach the inference service: {ex.Message}";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

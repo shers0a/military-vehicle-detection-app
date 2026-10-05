@@ -1,0 +1,103 @@
+@inject UploadOptions UploadOptions
+
+<div class="upload-panel">
+    <label class="upload-label">@Label</label>
+    <InputFile OnChange="HandleFileSelectedAsync" accept=".jpg,.jpeg,.png" disabled="@IsBusy" />
+
+    @if (IsBusy)
+    {
+        <p class="upload-status">Reading file…</p>
+    }
+    @if (ErrorMessage is not null)
+    {
+        <p class="upload-error">@ErrorMessage</p>
+    }
+    @if (Image is not null)
+    {
+        <img class="upload-preview" src="@Image.DataUrl" alt="@Image.FileName" />
+        <p class="upload-filename">@Image.FileName</p>
+    }
+</div>
+
+<style>
+    .upload-panel {
+        border: 1px solid #d7dbe2;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+
+    .upload-label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .upload-preview {
+        max-width: 100%;
+        max-height: 320px;
+        margin-top: 0.75rem;
+        border-radius: 4px;
+        object-fit: contain;
+    }
+
+    .upload-filename {
+        font-size: 0.8rem;
+        opacity: 0.7;
+        word-break: break-all;
+    }
+
+    .upload-error {
+        color: #b32121;
+    }
+
+    .upload-status {
+        opacity: 0.7;
+    }
+</style>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = "";
+
+    [Parameter]
+    public EventCallback<UploadedImage?> ImageChanged { get; set; }
+
+    public UploadedImage? Image { get; private set; }
+    private bool IsBusy { get; set; }
+    private string? ErrorMessage { get; set; }
+
+    private async Task HandleFileSelectedAsync(InputFileChangeEventArgs e)
+    {
+        ErrorMessage = null;
+        Image = null;
+        await ImageChanged.InvokeAsync(null);
+
+        var file = e.File;
+        if (file.Size > UploadOptions.MaxFileSizeBytes)
+        {
+            ErrorMessage = $"File is {file.Size / 1_048_576.0:F0} MB, which exceeds the {UploadOptions.MaxFileSizeBytes / 1_048_576.0:F0} MB upload limit.";
+            return;
+        }
+
+        IsBusy = true;
+        StateHasChanged();
+
+        try
+        {
+            await using var stream = file.OpenReadStream(UploadOptions.MaxFileSizeBytes);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+
+            Image = new UploadedImage(file.Name, file.ContentType, buffer.ToArray());
+            await ImageChanged.InvokeAsync(Image);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Failed to read file: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+}
