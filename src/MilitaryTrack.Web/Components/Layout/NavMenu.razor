@@ -1,3 +1,29 @@
+@inject InferenceClient Inference
+
+@code{
+    private bool? isHealthy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try{ isHealthy = await Inference.GetHealthAsync(); }
+        catch{ isHealthy = false; }
+    }
+
+}
+
+<div class="model-status">
+        @if(isHealthy is null ){
+            <span class="Badge checking">Verifying...</span>
+        }
+        else if(isHealthy == true){
+            <span class="Badge ok">Model loaded</span>
+        }
+        else{
+            <span class="Badge bad">Degraded Model</span>
+        }   
+    }    
+</div>
+
 <div class="nav-menu">
     <NavLink href="detect" Match="NavLinkMatch.All" class="nav-link">
         Object Detection <span class="nav-sub">(Single Image)</span>
