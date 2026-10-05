@@ -1,0 +1,96 @@
+@* SVG diverging grid renderer, mirroring the old Streamlit app's
+   seaborn.heatmap(cmap="vlag", center=0, annot=True, fmt=".0f"):
+   blue = departure (negative), white = no change, red = arrival (positive). *@
+
+<div class="heatmap-container">
+    <svg viewBox="0 0 @(BinsX * CellSize) @(BinsY * CellSize)" class="heatmap-svg" preserveAspectRatio="xMidYMid meet">
+        @for (var xi = 0; xi < BinsX; xi++)
+        {
+            var x = xi;
+            for (var yi = 0; yi < BinsY; yi++)
+            {
+                var y = yi;
+                var value = Matrix[x][y];
+                @((MarkupString)CellMarkup(x, y, value))
+            }
+        }
+    </svg>
+    <div class="heatmap-legend">
+        <span class="legend-swatch" style="background:@ColorFor(-MaxAbs)"></span> Departure (-)
+        <span class="legend-swatch" style="background:#ffffff;border:1px solid #ccc"></span> No change
+        <span class="legend-swatch" style="background:@ColorFor(MaxAbs)"></span> Arrival (+)
+    </div>
+</div>
+
+<style>
+    .heatmap-container {
+        max-width: 700px;
+    }
+
+    .heatmap-svg {
+        width: 100%;
+        height: auto;
+        border: 1px solid #d7dbe2;
+    }
+
+    .heatmap-legend {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-top: 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    .legend-swatch {
+        display: inline-block;
+        width: 1rem;
+        height: 1rem;
+        border-radius: 2px;
+    }
+</style>
+
+@code {
+    private const int CellSize = 40;
+    private static readonly System.Globalization.CultureInfo Ci = System.Globalization.CultureInfo.InvariantCulture;
+
+    [Parameter, EditorRequired]
+    public double[][] Matrix { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public int BinsX { get; set; }
+
+    [Parameter, EditorRequired]
+    public int BinsY { get; set; }
+
+    private double MaxAbs =>
+        Matrix.Length == 0 ? 1.0 : System.Math.Max(1.0, Matrix.SelectMany(row => row).Select(System.Math.Abs).DefaultIfEmpty(0).Max());
+
+    private string CellMarkup(int x, int y, double value)
+    {
+        var color = ColorFor(value);
+        var rectX = (x * CellSize).ToString(Ci);
+        var rectY = (y * CellSize).ToString(Ci);
+        var textColor = System.Math.Abs(value) > MaxAbs * 0.6 ? "#ffffff" : "#1b2430";
+
+        return $"""
+            <rect x="{rectX}" y="{rectY}" width="{CellSize}" height="{CellSize}" fill="{color}" stroke="#e8eaee" stroke-width="1" />
+            <text x="{(x * CellSize + CellSize / 2.0).ToString(Ci)}" y="{(y * CellSize + CellSize / 2.0 + 4).ToString(Ci)}" fill="{textColor}" font-size="12" font-family="sans-serif" text-anchor="middle">{value:F0}</text>
+            """;
+    }
+
+    private string ColorFor(double value)
+    {
+        var t = System.Math.Clamp(value / MaxAbs, -1.0, 1.0);
+        return t >= 0
+            ? Lerp((255, 255, 255), (179, 33, 33), t)
+            : Lerp((255, 255, 255), (33, 90, 179), -t);
+    }
+
+    private static string Lerp((int R, int G, int B) from, (int R, int G, int B) to, double t)
+    {
+        var r = (int)(from.R + (to.R - from.R) * t);
+        var g = (int)(from.G + (to.G - from.G) * t);
+        var b = (int)(from.B + (to.B - from.B) * t);
+        return $"#{r:X2}{g:X2}{b:X2}";
+    }
+}

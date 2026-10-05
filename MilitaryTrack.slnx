@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MilitaryTrack.Core/MilitaryTrack.Core.csproj" />
+    <Project Path="src/MilitaryTrack.Web/MilitaryTrack.Web.csproj" />
+  </Folder>
+</Solution>

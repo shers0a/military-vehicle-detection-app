@@ -1,0 +1,24 @@
+# .NET
+bin/
+obj/
+*.user
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Model weights and training artifacts (large binaries, don't commit)
+*.pt
+runs/
+dataset/
+
+# Local env / secrets
+.env
+inference_service/.env
+
+# IDE
+.vs/
+.idea/
