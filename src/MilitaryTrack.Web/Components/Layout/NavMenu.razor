@@ -1,27 +1,22 @@
+@attribute [StreamRendering]
 @inject InferenceClient Inference
 
-@code{
-    private bool? isHealthy;
-
-    protected override async Task OnInitializedAsync()
-    {
-        try{ isHealthy = await Inference.GetHealthAsync(); }
-        catch{ isHealthy = false; }
-    }
-
-}
-
 <div class="model-status">
-        @if(isHealthy is null ){
-            <span class="Badge checking">Verifying...</span>
-        }
-        else if(isHealthy == true){
-            <span class="Badge ok">Model loaded</span>
-        }
-        else{
-            <span class="Badge bad">Degraded Model</span>
-        }   
-    }    
+    @switch (_state)
+    {
+        case ServiceState.Checking:
+            <span class="badge badge-neutral">Checking model…</span>
+            break;
+        case ServiceState.Ok:
+            <span class="badge badge-ok" title="Running on @_health?.Device">Model loaded</span>
+            break;
+        case ServiceState.Degraded:
+            <span class="badge badge-bad" title="@_health?.Detail">Model not loaded</span>
+            break;
+        default:
+            <span class="badge badge-neutral" title="The inference service did not respond">Service offline</span>
+            break;
+    }
 </div>
 
 <div class="nav-menu">
@@ -64,4 +59,66 @@
         font-size: 0.75rem;
         opacity: 0.7;
     }
+
+    .model-status {
+        margin-bottom: 1rem;
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.25rem 0.65rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .badge::before {
+        content: "";
+        width: 0.5rem;
+        height: 0.5rem;
+        border-radius: 50%;
+        background: currentColor;
+    }
+
+    .badge-ok {
+        background: #1e4d33;
+        color: #6ee7a0;
+    }
+
+    .badge-bad {
+        background: #4d1e1e;
+        color: #f28b8b;
+    }
+
+    .badge-neutral {
+        background: #333b48;
+        color: #aab1bd;
+    }
 </style>
+
+@code {
+    // The layout is statically rendered, so this runs on every page load. A short timeout
+    // keeps a busy inference service from stalling the page (the client default is 300s).
+    private static readonly TimeSpan HealthCheckTimeout = TimeSpan.FromSeconds(3);
+
+    private enum ServiceState { Checking, Ok, Degraded, Offline }
+
+    private ServiceState _state = ServiceState.Checking;
+    private HealthStatus? _health;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var cts = new CancellationTokenSource(HealthCheckTimeout);
+        try
+        {
+            _health = await Inference.GetHealthAsync(cts.Token);
+            _state = _health.ModelLoaded ? ServiceState.Ok : ServiceState.Degraded;
+        }
+        catch (Exception)
+        {
+            _state = ServiceState.Offline;
+        }
+    }
+}
