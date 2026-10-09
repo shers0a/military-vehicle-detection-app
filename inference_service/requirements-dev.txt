@@ -1,3 +1,5 @@
 -r requirements.txt
 matplotlib>=3.9
 seaborn>=0.13
+pytest>=8.0
+httpx2>=2.0

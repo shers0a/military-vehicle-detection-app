@@ -1,3 +1,5 @@
+import threading
+
 import numpy as np
 from sahi import AutoDetectionModel
 from sahi.predict import get_sliced_prediction
@@ -5,6 +7,10 @@ from sahi.predict import get_sliced_prediction
 from .config import Settings
 
 EXCLUDED_FROM_TACTICAL_POINTS = {"Civilian_Vehicle"}
+
+# One model instance is shared by every request, and Ultralytics YOLO models are not
+# thread-safe. Endpoints run in a thread pool, so inferences must take turns.
+_inference_lock = threading.Lock()
 
 
 class ModelNotAvailableError(RuntimeError):
@@ -30,14 +36,15 @@ def load_model(settings: Settings) -> AutoDetectionModel:
 
 
 def run_sliced_detection(image_np: np.ndarray, model: AutoDetectionModel, slice_size: int, overlap_ratio: float):
-    return get_sliced_prediction(
-        image_np,
-        model,
-        slice_height=slice_size,
-        slice_width=slice_size,
-        overlap_height_ratio=overlap_ratio,
-        overlap_width_ratio=overlap_ratio,
-    )
+    with _inference_lock:
+        return get_sliced_prediction(
+            image_np,
+            model,
+            slice_height=slice_size,
+            slice_width=slice_size,
+            overlap_height_ratio=overlap_ratio,
+            overlap_width_ratio=overlap_ratio,
+        )
 
 
 def filter_by_confidence(result, confidence_threshold: float):

@@ -3,4 +3,7 @@
     <Project Path="src/MilitaryTrack.Core/MilitaryTrack.Core.csproj" />
     <Project Path="src/MilitaryTrack.Web/MilitaryTrack.Web.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MilitaryTrack.Core.Tests/MilitaryTrack.Core.Tests.csproj" />
+  </Folder>
 </Solution>

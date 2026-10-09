@@ -1,0 +1,18 @@
+# Keep the build context small: the local venv alone is ~6 GB.
+**/.venv
+**/venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/bin
+**/obj
+**/TestResults
+**/*.pt
+**/runs
+**/dataset
+**/.env
+.git
+.vscode
+.idea
+legacy
+docs

@@ -22,3 +22,7 @@ inference_service/.env
 # IDE
 .vs/
 .idea/
+
+# Test caches
+.pytest_cache/
+TestResults/

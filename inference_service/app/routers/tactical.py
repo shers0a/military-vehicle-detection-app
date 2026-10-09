@@ -1,34 +1,42 @@
 import numpy as np
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
-from PIL import Image
 
 from .. import detection, tactical
 from ..config import get_settings
 from ..schemas import TacticalMapResponse
+from .uploads import read_rgb_image
 
 router = APIRouter(tags=["tactical"])
 
 
+# Plain `def` for the same reason as /detect: blocking inference must run in the thread pool.
 @router.post("/tactical-map", response_model=TacticalMapResponse)
-async def tactical_map(
+def tactical_map(
     request: Request,
     file_t0: UploadFile = File(...),
     file_t1: UploadFile = File(...),
-    confidence_threshold: float | None = Form(None),
-    gsd_m_per_px: float | None = Form(None),
-    grid_size_m: float | None = Form(None),
+    confidence_threshold: float | None = Form(None, ge=0, le=1),
+    gsd_m_per_px: float | None = Form(None, gt=0),
+    grid_size_m: float | None = Form(None, gt=0),
 ):
-    model = request.app.state.model
-    if model is None:
-        raise HTTPException(status_code=503, detail=request.app.state.model_error)
-
     settings = get_settings()
     confidence_threshold = confidence_threshold if confidence_threshold is not None else settings.default_confidence_threshold
     gsd_m_per_px = gsd_m_per_px if gsd_m_per_px is not None else settings.default_gsd_m_per_px
     grid_size_m = grid_size_m if grid_size_m is not None else settings.default_grid_size_m
 
-    image_t0 = Image.open(file_t0.file).convert("RGB")
-    image_t1 = Image.open(file_t1.file).convert("RGB")
+    # A sector smaller than one pixel would explode the number of grid cells.
+    if grid_size_m < gsd_m_per_px:
+        raise HTTPException(
+            status_code=422,
+            detail=f"grid_size_m ({grid_size_m}) must be at least one pixel wide (gsd_m_per_px = {gsd_m_per_px}).",
+        )
+
+    model = request.app.state.model
+    if model is None:
+        raise HTTPException(status_code=503, detail=request.app.state.model_error)
+
+    image_t0 = read_rgb_image(file_t0)
+    image_t1 = read_rgb_image(file_t1)
 
     warnings = []
     if image_t0.size != image_t1.size:
