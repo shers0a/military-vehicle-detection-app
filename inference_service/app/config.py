@@ -8,6 +8,7 @@ SERVICE_DIR = Path(__file__).resolve().parent.parent
 PROJECT_ROOT = SERVICE_DIR.parent
 
 DEFAULT_MODEL_SEARCH_PATHS = [
+    PROJECT_ROOT / "models" / "best.pt",
     SERVICE_DIR / "best.pt",
     PROJECT_ROOT / "best.pt",
     PROJECT_ROOT / "runs" / "detect" / "rezultat_militar" / "weights" / "best.pt",

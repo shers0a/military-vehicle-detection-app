@@ -1,0 +1,38 @@
+# Whole stack with one command (works with both Podman and Docker):
+#   podman compose up --build        or        docker compose up --build
+# Then open http://localhost:5095 (UI) or http://localhost:8000/docs (inference API).
+# Put the trained weights at ./models/best.pt first; without them the UI shows "Model not loaded".
+services:
+  inference:
+    build:
+      context: .
+      dockerfile: inference_service/Dockerfile
+    image: militarytrack-inference
+    environment:
+      MODEL_PATH: /models/best.pt
+      DEVICE: cpu
+    volumes:
+      # Weights live outside the image. ":Z" relabels the folder for SELinux (Fedora);
+      # it is ignored on systems without SELinux.
+      - ./models:/models:ro,Z
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  web:
+    build:
+      context: .
+      dockerfile: src/MilitaryTrack.Web/Dockerfile
+    image: militarytrack-web
+    environment:
+      # Containers on the same compose network reach each other by service name.
+      InferenceService__BaseUrl: http://inference:8000
+    ports:
+      - "5095:8080"
+    depends_on:
+      - inference

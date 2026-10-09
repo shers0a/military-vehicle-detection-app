@@ -4,7 +4,8 @@ FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
+    UV_NO_CACHE=1 \
+    UV_HTTP_TIMEOUT=120 \
     YOLO_CONFIG_DIR=/tmp/ultralytics
 
 # OpenCV (pulled in by ultralytics/sahi) needs these shared libraries at runtime.
@@ -14,11 +15,15 @@ RUN apt-get update \
 
 WORKDIR /srv/inference_service
 
+# uv instead of pip: pip's resolver backtracks for ages over opencv/numpy versions
+# because of the numpy<2 pin, while uv resolves the same requirements in seconds.
+RUN pip install --no-cache-dir uv
+
 # CPU-only PyTorch first: the default PyPI wheel bundles ~2 GB of CUDA libraries.
-RUN pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+RUN uv pip install --system torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
 COPY inference_service/requirements.txt .
-RUN pip install -r requirements.txt
+RUN uv pip install --system -r requirements.txt
 
 COPY config.yaml /srv/config.yaml
 COPY inference_service/app ./app

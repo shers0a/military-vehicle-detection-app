@@ -21,9 +21,9 @@ def load_model(settings: Settings) -> AutoDetectionModel:
     model_path = settings.resolve_model_path()
     if model_path is None:
         raise ModelNotAvailableError(
-            "No model weights found. Set MODEL_PATH or place best.pt in the "
-            "inference_service directory, the project root, or "
-            "./runs/detect/rezultat_militar/weights/best.pt"
+            "No model weights found. Set MODEL_PATH or place best.pt in models/ "
+            "(or the inference_service directory, the project root, or "
+            "runs/detect/rezultat_militar/weights/)."
         )
 
     device = settings.resolve_device()
