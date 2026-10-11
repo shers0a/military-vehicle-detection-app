@@ -87,7 +87,7 @@ public sealed class InferenceClient(HttpClient httpClient)
             try
             {
                 var problem = await response.Content.ReadFromJsonAsync<JsonElement>(ct);
-                detail = problem.TryGetProperty("detail", out var d) ? d.ToString() : response.ReasonPhrase ?? "Request failed";
+                detail = problem.TryGetProperty("detail", out var d) ? FormatDetail(d) : response.ReasonPhrase ?? "Request failed";
             }
             catch
             {
@@ -99,5 +99,24 @@ public sealed class InferenceClient(HttpClient httpClient)
 
         var result = await response.Content.ReadFromJsonAsync<T>(JsonOptions, ct);
         return result ?? throw new InferenceServiceException("Empty response from inference service", response.StatusCode);
+    }
+
+    /// <summary>FastAPI returns <c>detail</c> as a plain string for errors raised in code, but as a
+    /// list of <c>{loc, msg}</c> objects for request validation errors (422).</summary>
+    private static string FormatDetail(JsonElement detail)
+    {
+        if (detail.ValueKind != JsonValueKind.Array)
+        {
+            return detail.ToString();
+        }
+
+        return string.Join("; ", detail.EnumerateArray().Select(error =>
+        {
+            var field = error.TryGetProperty("loc", out var loc) && loc.ValueKind == JsonValueKind.Array && loc.GetArrayLength() > 0
+                ? loc[loc.GetArrayLength() - 1].ToString()
+                : "request";
+            var message = error.TryGetProperty("msg", out var msg) ? msg.ToString() : error.ToString();
+            return $"{field}: {message}";
+        }));
     }
 }

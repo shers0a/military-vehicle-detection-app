@@ -2,7 +2,8 @@
    seaborn.heatmap(cmap="vlag", center=0, annot=True, fmt=".0f"):
    blue = departure (negative), white = no change, red = arrival (positive). *@
 
-<div class="heatmap-container">
+@* Cap on-screen cell size (~90px) so small grids don't render as giant tiles. *@
+<div class="heatmap-container" style="max-width: @(Math.Min(700, BinsX * 90))px">
     <svg viewBox="0 0 @(BinsX * CellSize) @(BinsY * CellSize)" class="heatmap-svg" preserveAspectRatio="xMidYMid meet">
         @for (var xi = 0; xi < BinsX; xi++)
         {
