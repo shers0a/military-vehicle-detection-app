@@ -66,16 +66,41 @@ def test_image_smaller_than_one_sector_still_has_one_cell():
     assert diff[0, 0] == 1
 
 
+def test_sectors_are_exactly_grid_size_with_partial_edge_sectors():
+    # 640 px at 0.3 m/px = 192 m -> three full 50 m sectors plus a partial fourth one.
+    # (The old int()-based grid gave 3 sectors of 64 m each.)
+    t1 = points([170, 10])  # 51 m from the left edge -> second 50 m sector, not the first
+
+    diff, bins_x, bins_y = calculate_tactical_heatmap(NO_POINTS, t1, 640, 640, 0.3, 50.0)
+
+    assert (bins_x, bins_y) == (4, 4)
+    assert diff[1, 0] == 1
+
+
+def test_vehicle_on_the_far_image_edge_is_counted():
+    diff, _, _ = calculate_tactical_heatmap(NO_POINTS, points([639.9, 639.9]), 640, 640, 0.3, 50.0)
+
+    assert diff[3, 3] == 1
+
+
+def test_density_uses_the_real_ground_footprint():
+    # 640 x 640 px at 0.3 m/px = 192 m x 192 m = 3.6864 ha
+    area_ha, density = calculate_density(30, 640, 640, 0.3)
+
+    assert area_ha == pytest.approx(3.6864)
+    assert density == pytest.approx(30 / 3.6864)
+
+
 def test_density_per_hectare():
-    # 2x2 sectors of 50 m = 100 m x 100 m = 1 ha
-    area_ha, density = calculate_density(10, 2, 2, GRID)
+    # 1000 x 1000 px at 0.1 m/px = 100 m x 100 m = 1 ha
+    area_ha, density = calculate_density(10, 1000, 1000, 0.1)
 
     assert area_ha == pytest.approx(1.0)
     assert density == pytest.approx(10.0)
 
 
 def test_density_with_zero_area_does_not_divide_by_zero():
-    area_ha, density = calculate_density(5, 2, 2, 0.0)
+    area_ha, density = calculate_density(5, 0, 640, 0.3)
 
     assert area_ha == 0
     assert density == 0.0

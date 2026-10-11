@@ -61,7 +61,8 @@ def tactical_map(
     diff_matrix, bins_x, bins_y = tactical.calculate_tactical_heatmap(
         points_t0, points_t1, img_w, img_h, gsd_m_per_px, grid_size_m
     )
-    total_area_ha, density = tactical.calculate_density(len(points_t1), bins_x, bins_y, grid_size_m)
+    t1_w, t1_h = image_t1.size
+    total_area_ha, density = tactical.calculate_density(len(points_t1), t1_w, t1_h, gsd_m_per_px)
 
     return TacticalMapResponse(
         image_width=img_w,

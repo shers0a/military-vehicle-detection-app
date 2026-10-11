@@ -47,7 +47,7 @@ def main():
         points_t0, points_t1, img_w, img_h, settings.default_gsd_m_per_px, settings.default_grid_size_m
     )
     total_area_ha, density = tactical.calculate_density(
-        len(points_t1), bins_x, bins_y, settings.default_grid_size_m
+        len(points_t1), *image_t1.size, settings.default_gsd_m_per_px
     )
 
     print(f"Tactical Grid: {bins_x}x{bins_y} sectors.")
