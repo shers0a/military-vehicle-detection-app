@@ -5,14 +5,12 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# Restore first, from the project files only, so the NuGet layer stays cached
-# until a .csproj changes rather than on every code edit.
-COPY src/MilitaryTrack.Core/MilitaryTrack.Core.csproj src/MilitaryTrack.Core/
-COPY src/MilitaryTrack.Web/MilitaryTrack.Web.csproj src/MilitaryTrack.Web/
-RUN dotnet restore src/MilitaryTrack.Web/MilitaryTrack.Web.csproj
-
+# Copy the sources *before* restoring. The usual trick of restoring from the .csproj files
+# alone (for layer caching) breaks Blazor here: the SDK only adds the package that ships
+# _framework/blazor.web.js when it sees Razor components at restore time, so the page
+# would load but never become interactive.
 COPY src/ src/
-RUN dotnet publish src/MilitaryTrack.Web/MilitaryTrack.Web.csproj -c Release -o /app --no-restore
+RUN dotnet publish src/MilitaryTrack.Web/MilitaryTrack.Web.csproj -c Release -o /app
 
 # Stage 2: only the ASP.NET runtime and the published output end up in the final image.
 FROM mcr.microsoft.com/dotnet/aspnet:10.0

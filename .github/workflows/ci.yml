@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  dotnet:
+    name: .NET build & tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: "10.0.x"
+      - run: dotnet build MilitaryTrack.slnx -c Release
+      - run: dotnet test MilitaryTrack.slnx -c Release --no-build
+
+  python:
+    name: Inference service tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: inference_service
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      # OpenCV (pulled in by ultralytics/sahi) needs libGL even for headless use.
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libgl1
+      - run: pip install uv
+      # Same install order as the Dockerfile: CPU-only PyTorch first (no CUDA download).
+      - run: uv pip install --system torch torchvision --index-url https://download.pytorch.org/whl/cpu
+      - run: uv pip install --system -r requirements-dev.txt
+      # No model weights in CI: the tests use a fake model, so they check request
+      # handling, validation and the tactical-map math, not YOLO accuracy.
+      - run: python -m pytest -v
+
+  containers:
+    name: Container images build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker build -f inference_service/Dockerfile -t militarytrack-inference .
+      - run: docker build -f src/MilitaryTrack.Web/Dockerfile -t militarytrack-web .
